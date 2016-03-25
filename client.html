@@ -1,36 +1,52 @@
 <!DOCTYPE html>
 <html>
    <head>
-      <script type="text/javascript">
-         var socket = null;
-         var isopen = false;
-         window.onload = function() {
-            socket = new WebSocket("ws://127.0.0.1:9000");
-            socket.binaryType = "arraybuffer";
-            socket.onopen = function() {
-               console.log("Connected!");
-               isopen = true;
-            }
-            socket.onmessage = function(e) {
-				console.log("Text message received: " + e.data);
-            }
-            socket.onclose = function(e) {
-               console.log("Connection closed.");
-               socket = null;
-               isopen = false;
-            }
-         };
-         function sendText() {
-            if (isopen) {
-               socket.send("Hello, world!");
-               console.log("Text message sent.");               
-            } else {
-               console.log("Connection not opened.")
-            }
-         };
-      </script>
+       <script type="text/javascript">
+var socket = null;
+var isopen = false;
+window.onload = function() {
+    socket = new WebSocket("ws://127.0.0.1:9000");
+    socket.onopen = function() {
+        console.log("Connected!");
+        isopen = true;
+    }
+    socket.onmessage = function(e) {
+        console.log("Text message received: " + e.data);
+    }
+    socket.onclose = function(e) {
+        console.log("Connection closed.");
+        socket = null;
+        isopen = false;
+    }
+};
+function sendText() {
+    if (isopen) {
+        socket.send("Hello, world!");
+        console.log("Text message sent.");
+    } else {
+        console.log("Connection not opened.")
+    }
+};
+function sendConfig(fill_timeout) {
+    if (isopen) {
+        socket.send("{\"type\":\"CONFIG\",\"fill_timeout\":" + fill_timeout + "}");
+        console.log("Text message sent.");
+    } else {
+        console.log("Connection not opened.")
+    }
+};
+       </script>
    </head>
    <body>
+       <h1>Basic Client</h1>
       <button onclick='sendText();'>Send Text Message</button>
    </body>
+   <div>
+       <h2>Modify Config</h2>
+       <form name="config_form" action="" method="GET">
+           <label for="fill_timeout">Fill timeout</label>
+           <input type="number" min="0" max="10" step="0.1" name="fill_timeout" value="5">seconds<p>
+           <input type="button" name="button" value="Send Config" onClick="sendConfig(this.form.fill_timeout.value)">
+       </form>
+   </div>
 </html>

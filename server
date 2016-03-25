@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 from twisted.internet import reactor, task
+from json import loads
 from random import randint
 
 from autobahn.twisted.websocket import WebSocketServerProtocol, \
@@ -10,6 +11,7 @@ from autobahn.twisted.websocket import WebSocketServerProtocol, \
 class MyServerProtocol(WebSocketServerProtocol):
 
     def __init__(self):
+        super(MyServerProtocol, self).__init__()
         self.fill_timeout = 5.0
         self.fill_looping_call = task.LoopingCall(self.send_fill)
 
@@ -25,12 +27,22 @@ class MyServerProtocol(WebSocketServerProtocol):
     def onMessage(self, payload, is_binary):
         assert not is_binary
         print("Text message received: {0}".format(payload.decode('utf8')))
-
-        # echo back message verbatim
-        self.sendMessage(payload, is_binary)
+        message = loads(payload)
+        assert 'type' in message
+        if message['type'] == 'CONFIG':
+            self.handle_config(message)
+        else:
+            print("Unhandle message type {}".format(message['type']))
 
     def onClose(self, wasClean, code, reason):
         print("WebSocket connection closed: {0}".format(reason))
+
+    def handle_config(self, message):
+        assert 'fill_timeout' in message
+        self.fill_timeout = message['fill_timeout']
+
+        self.fill_looping_call.stop()
+        self.fill_looping_call.start(self.fill_timeout)
 
     def send_fill(self):
         self.sendMessage(generate_fill(), False)
@@ -41,7 +53,7 @@ base_price = 97.0
 tick_increment = 0.0025
 
 def generate_fill():
-    return '{{"instrument":{},"side":{},"quantity":{},"price":{}}}'.format(
+    return '{{"type":"FILL","instrument":{},"side":{},"quantity":{},"price":{}}}'.format(
         'XTH6', sides[randint(0, 1)], randint(1,100), base_price + randint(-25, 25) * tick_increment)
 
 if __name__ == '__main__':
